@@ -1,256 +1,262 @@
+define(function () {
+  var Entity = Class.extend({
+    init: function (id, kind) {
+      var self = this;
 
-define(function() {
-    var Entity = Class.extend({
-        init: function(id, kind) {
-    var self = this;
+      this.id = id;
+      this.kind = kind;
 
-    this.id = id;
-    this.kind = kind;
+      // Renderer
+      this.sprite = null;
+      this.flipSpriteX = false;
+      this.flipSpriteY = false;
+      this.animations = null;
+      this.currentAnimation = null;
+      this.shadowOffsetY = 0;
 
-    // Renderer
-    this.sprite = null;
-    this.flipSpriteX = false;
-    this.flipSpriteY = false;
-    this.animations = null;
-    this.currentAnimation = null;
-    this.shadowOffsetY = 0;
+      // Position
+      this.setGridPosition(0, 0);
 
-    // Position
-    this.setGridPosition(0, 0);
+      // Modes
+      this.isLoaded = false;
+      this.isHighlighted = false;
+      this.visible = true;
+      this.isFading = false;
+      this.setDirty();
+    },
 
-    // Modes
-    this.isLoaded = false;
-    this.isHighlighted = false;
-    this.visible = true;
-    this.isFading = false;
-    this.setDirty();
-    	},
-	
-    	setName: function(name) {
-    this.name = name;
-    	},
-	
-    	setPosition: function(x, y) {
-    this.x = x;
-    this.y = y;
-    	},
-	
-    	setGridPosition: function(x, y) {
-    this.gridX = x;
-    this.gridY = y;
+    setName: function (name) {
+      this.name = name;
+    },
 
-    this.setPosition(x * 16, y * 16);
-    	},
-	
-    	setSprite: function(sprite) {
-    if (!sprite) {
-      log.error(this.id + " : sprite is null", true);
-      throw "Sprite error";
-    }
+    setPosition: function (x, y) {
+      this.x = x;
+      this.y = y;
+    },
 
-    if (this.sprite && this.sprite.name === sprite.name) {
-      return;
-    }
+    setGridPosition: function (x, y) {
+      this.gridX = x;
+      this.gridY = y;
 
-    this.sprite = sprite;
-    this.normalSprite = this.sprite;
+      this.setPosition(x * 16, y * 16);
+    },
 
-    if (Types.isMob(this.kind) || Types.isPlayer(this.kind)) {
-      this.hurtSprite = sprite.getHurtSprite();
-    }
+    setSprite: function (sprite) {
+      if (!sprite) {
+        log.error(this.id + " : sprite is null", true);
+        throw "Sprite error";
+      }
 
-    this.animations = sprite.createAnimations();
+      if (this.sprite && this.sprite.name === sprite.name) {
+        return;
+      }
 
-    this.isLoaded = true;
-    if (this.ready_func) {
-      this.ready_func();
-    }
-    	},
-	
-    	getSprite: function() {
-    return this.sprite;
-    	},
-	
-    	getSpriteName: function() 
-    { return Types.getKindAsString(this.kind); }
-    ,
+      this.sprite = sprite;
+      this.normalSprite = this.sprite;
 
-        getAnimationByName:
-            function(name) {
-              var animation = null;
+      if (Types.isMob(this.kind) || Types.isPlayer(this.kind)) {
+        this.hurtSprite = sprite.getHurtSprite();
+      }
 
-              if (name in this.animations) {
-                animation = this.animations[name];
-              } else {
-                log.error("No animation called " + name);
-              }
-              return animation;
-            },
+      this.animations = sprite.createAnimations();
 
-        setAnimation:
-            function(name, speed, count, onEndCount) {
-              var self = this;
+      this.isLoaded = true;
+      if (this.ready_func) {
+        this.ready_func();
+      }
+    },
 
-              if (this.isLoaded) {
-                if (this.currentAnimation &&
-                    this.currentAnimation.name === name) {
-                  return;
-                }
+    getSprite: function () {
+      return this.sprite;
+    },
 
-                var s = this.sprite, a = this.getAnimationByName(name);
+    getSpriteName: function () {
+      return Types.getKindAsString(this.kind);
+    },
+    getAnimationByName: function (name) {
+      var animation = null;
 
-                if (a) {
-                  this.currentAnimation = a;
-                  if (name.substr(0, 3) === "atk") {
-                    this.currentAnimation.reset();
-                  }
-                  this.currentAnimation.setSpeed(speed);
-                  this.currentAnimation.setCount(
-                      count ? count : 0,
-                      onEndCount || function() { self.idle(); });
-                }
-              } else {
-                this.log_error("Not ready for animation");
-              }
-            },
+      if (name in this.animations) {
+        animation = this.animations[name];
+      } else {
+        log.error("No animation called " + name);
+      }
+      return animation;
+    },
 
-        hasShadow: function() { return false; },
+    setAnimation: function (name, speed, count, onEndCount) {
+      var self = this;
 
-        ready: function(f) { this.ready_func = f; },
+      if (this.isLoaded) {
+        if (this.currentAnimation && this.currentAnimation.name === name) {
+          return;
+        }
 
-        clean: function() { this.stopBlinking(); },
+        var s = this.sprite,
+          a = this.getAnimationByName(name);
 
-        log_info: function(
-            message) { log.info("[" + this.id + "] " + message); },
+        if (a) {
+          this.currentAnimation = a;
+          if (name.substr(0, 3) === "atk") {
+            this.currentAnimation.reset();
+          }
+          this.currentAnimation.setSpeed(speed);
+          this.currentAnimation.setCount(
+            count ? count : 0,
+            onEndCount ||
+              function () {
+                self.idle();
+              },
+          );
+        }
+      } else {
+        this.log_error("Not ready for animation");
+      }
+    },
 
-        log_error: function(
-            message) { log.error("[" + this.id + "] " + message); },
+    hasShadow: function () {
+      return false;
+    },
 
-        setHighlight:
-            function(value) {
-              if (value === true) {
-                this.sprite = this.sprite.silhouetteSprite;
-                this.isHighlighted = true;
-              } else {
-                this.sprite = this.normalSprite;
-                this.isHighlighted = false;
-              }
-            },
+    ready: function (f) {
+      this.ready_func = f;
+    },
 
-        setVisible: function(value) { this.visible = value; },
+    clean: function () {
+      this.stopBlinking();
+    },
 
-        isVisible: function() { return this.visible; },
+    log_info: function (message) {
+      log.info("[" + this.id + "] " + message);
+    },
 
-        toggleVisibility:
-            function() {
-              if (this.visible) {
-                this.setVisible(false);
-              } else {
-                this.setVisible(true);
-              }
-            },
+    log_error: function (message) {
+      log.error("[" + this.id + "] " + message);
+    },
 
-        /**
-         *
-         */
-        getDistanceToEntity:
-            function(entity) {
-              var distX = Math.abs(entity.gridX - this.gridX);
-              var distY = Math.abs(entity.gridY - this.gridY);
+    setHighlight: function (value) {
+      if (value === true) {
+        this.sprite = this.sprite.silhouetteSprite;
+        this.isHighlighted = true;
+      } else {
+        this.sprite = this.normalSprite;
+        this.isHighlighted = false;
+      }
+    },
 
-              return (distX > distY) ? distX : distY;
-            },
+    setVisible: function (value) {
+      this.visible = value;
+    },
 
-        isCloseTo:
-            function(entity) {
-              var dx, dy, d, close = false;
-              if (entity) {
-                dx = Math.abs(entity.gridX - this.gridX);
-                dy = Math.abs(entity.gridY - this.gridY);
+    isVisible: function () {
+      return this.visible;
+    },
 
-                if (dx < 30 && dy < 14) {
-                  close = true;
-                }
-              }
-              return close;
-            },
+    toggleVisibility: function () {
+      if (this.visible) {
+        this.setVisible(false);
+      } else {
+        this.setVisible(true);
+      }
+    },
 
-        /**
-         * Returns true if the entity is adjacent to the given one.
-         * @returns {Boolean} Whether these two entities are adjacent.
-         */
-        isAdjacent:
-            function(entity) {
-              var adjacent = false;
+    /**
+     *
+     */
+    getDistanceToEntity: function (entity) {
+      var distX = Math.abs(entity.gridX - this.gridX);
+      var distY = Math.abs(entity.gridY - this.gridY);
 
-              if (entity) {
-                adjacent = this.getDistanceToEntity(entity) > 1 ? false : true;
-              }
-              return adjacent;
-            },
+      return distX > distY ? distX : distY;
+    },
 
-        /**
-         *
-         */
-        isAdjacentNonDiagonal:
-            function(entity) {
-              var result = false;
+    isCloseTo: function (entity) {
+      var dx,
+        dy,
+        d,
+        close = false;
+      if (entity) {
+        dx = Math.abs(entity.gridX - this.gridX);
+        dy = Math.abs(entity.gridY - this.gridY);
 
-              if (this.isAdjacent(entity) && !(this.gridX !== entity.gridX &&
-                                               this.gridY !== entity.gridY)) {
-                result = true;
-              }
+        if (dx < 30 && dy < 14) {
+          close = true;
+        }
+      }
+      return close;
+    },
 
-              return result;
-            },
+    /**
+     * Returns true if the entity is adjacent to the given one.
+     * @returns {Boolean} Whether these two entities are adjacent.
+     */
+    isAdjacent: function (entity) {
+      var adjacent = false;
 
-        isDiagonallyAdjacent:
-            function(entity) {
-              return this.isAdjacent(entity) &&
-                     !this.isAdjacentNonDiagonal(entity);
-            },
+      if (entity) {
+        adjacent = this.getDistanceToEntity(entity) > 1 ? false : true;
+      }
+      return adjacent;
+    },
 
-        forEachAdjacentNonDiagonalPosition:
-            function(callback) {
-              callback(this.gridX - 1, this.gridY, Types.Orientations.LEFT);
-              callback(this.gridX, this.gridY - 1, Types.Orientations.UP);
-              callback(this.gridX + 1, this.gridY, Types.Orientations.RIGHT);
-              callback(this.gridX, this.gridY + 1, Types.Orientations.DOWN);
-            },
+    /**
+     *
+     */
+    isAdjacentNonDiagonal: function (entity) {
+      var result = false;
 
-        fadeIn:
-            function(currentTime) {
-              this.isFading = true;
-              this.startFadingTime = currentTime;
-            },
+      if (
+        this.isAdjacent(entity) &&
+        !(this.gridX !== entity.gridX && this.gridY !== entity.gridY)
+      ) {
+        result = true;
+      }
 
-        blink:
-            function(speed, callback) {
-              var self = this;
+      return result;
+    },
 
-              this.blinking =
-                  setInterval(function() { self.toggleVisibility(); }, speed);
-            },
+    isDiagonallyAdjacent: function (entity) {
+      return this.isAdjacent(entity) && !this.isAdjacentNonDiagonal(entity);
+    },
 
-        stopBlinking:
-            function() {
-              if (this.blinking) {
-                clearInterval(this.blinking);
-              }
-              this.setVisible(true);
-            },
+    forEachAdjacentNonDiagonalPosition: function (callback) {
+      callback(this.gridX - 1, this.gridY, Types.Orientations.LEFT);
+      callback(this.gridX, this.gridY - 1, Types.Orientations.UP);
+      callback(this.gridX + 1, this.gridY, Types.Orientations.RIGHT);
+      callback(this.gridX, this.gridY + 1, Types.Orientations.DOWN);
+    },
 
-        setDirty:
-            function() {
-              this.isDirty = true;
-              if (this.dirty_callback) {
-                this.dirty_callback(this);
-              }
-            },
+    fadeIn: function (currentTime) {
+      this.isFading = true;
+      this.startFadingTime = currentTime;
+    },
 
-        onDirty: function(
-            dirty_callback) { this.dirty_callback = dirty_callback; }
-    });
-    
-    return Entity;
+    blink: function (speed, callback) {
+      var self = this;
+
+      this.blinking = setInterval(function () {
+        self.toggleVisibility();
+      }, speed);
+    },
+
+    stopBlinking: function () {
+      if (this.blinking) {
+        clearInterval(this.blinking);
+      }
+      this.setVisible(true);
+    },
+
+    setDirty: function () {
+      this.isDirty = true;
+      if (this.dirty_callback) {
+        this.dirty_callback(this);
+      }
+    },
+
+    onDirty: function (dirty_callback) {
+      this.dirty_callback = dirty_callback;
+    },
+  });
+
+  return Entity;
 });

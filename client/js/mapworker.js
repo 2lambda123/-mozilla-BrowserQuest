@@ -1,8 +1,9 @@
+importScripts(
+  "http://cdn.mozilla.net/browserquest/maps/world_client.js",
+  "lib/underscore.min.js",
+);
 
-importScripts('http://cdn.mozilla.net/browserquest/maps/world_client.js',
-              'lib/underscore.min.js');
-
-onmessage = function(event) {
+onmessage = function (event) {
   generateCollisionGrid();
   generatePlateauGrid();
 
@@ -20,12 +21,12 @@ function generateCollisionGrid() {
     }
   }
 
-  _.each(mapData.collisions, function(tileIndex) {
+  _.each(mapData.collisions, function (tileIndex) {
     var pos = tileIndexToGridPosition(tileIndex + 1);
     mapData.grid[pos.y][pos.x] = 1;
   });
 
-  _.each(mapData.blocking, function(tileIndex) {
+  _.each(mapData.blocking, function (tileIndex) {
     var pos = tileIndexToGridPosition(tileIndex + 1);
     if (mapData.grid[pos.y] !== undefined) {
       mapData.grid[pos.y][pos.x] = 1;
@@ -51,19 +52,19 @@ function generatePlateauGrid() {
 }
 
 function tileIndexToGridPosition(tileNum) {
-  var x = 0, y = 0;
+  var x = 0,
+    y = 0;
 
-  var getX =
-      function(num, w) {
+  var getX = function (num, w) {
     if (num == 0) {
       return 0;
     }
-    return (num % w == 0) ? w - 1 : (num % w) - 1;
-  }
+    return num % w == 0 ? w - 1 : (num % w) - 1;
+  };
 
   tileNum -= 1;
   x = getX(tileNum + 1, mapData.width);
   y = Math.floor(tileNum / mapData.width);
 
-  return {x : x, y : y};
+  return { x: x, y: y };
 }
